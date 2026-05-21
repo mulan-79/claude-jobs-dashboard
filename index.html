@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Jobs Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+      background: #f4f6fb;
+      color: #1a1a2e;
+      min-width: 800px;
+    }
+
+    /* ── 헤더 ── */
+    header {
+      background: #1F3864;
+      color: #fff;
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.3px; }
+    header span { font-size: 0.85rem; opacity: 0.65; margin-left: auto; }
+
+    /* ── 메인 레이아웃 ── */
+    main {
+      max-width: 900px;
+      margin: 36px auto;
+      padding: 0 24px;
+    }
+
+    /* ── 탭 ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      padding: 10px 28px;
+      border: 2px solid #1F3864;
+      background: #fff;
+      color: #1F3864;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .tab-btn.active {
+      background: #1F3864;
+      color: #fff;
+    }
+    .tab-btn:not(.active):hover { background: #e8edf6; }
+
+    /* ── 카드 ── */
+    .card {
+      background: #fff;
+      border-radius: 0 12px 12px 12px;
+      box-shadow: 0 2px 12px rgba(31,56,100,0.10);
+      padding: 32px;
+    }
+
+    /* ── 입력 영역 ── */
+    .input-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #1F3864;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 14px;
+      border: 1.5px solid #c8d4e8;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      resize: vertical;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+    textarea:focus { border-color: #1F3864; }
+
+    /* ── 버튼 ── */
+    .btn-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .run-btn {
+      background: #1F3864;
+      color: #fff;
+      border: none;
+      padding: 11px 36px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .run-btn:hover:not(:disabled) { background: #16294e; }
+    .run-btn:disabled { background: #8fa3c0; cursor: not-allowed; }
+    .shortcut-hint {
+      font-size: 0.78rem;
+      color: #8090a8;
+    }
+
+    /* ── 구분선 ── */
+    .divider {
+      border: none;
+      border-top: 1.5px solid #e6ecf5;
+      margin: 28px 0;
+    }
+
+    /* ── 결과 영역 ── */
+    #result-area { min-height: 120px; }
+
+    .placeholder {
+      color: #b0bac8;
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 32px 0;
+    }
+
+    /* 로딩 */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 32px 0;
+      color: #4a5568;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 4px solid #c8d4e8;
+      border-top-color: #1F3864;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* 오류 */
+    .error-box {
+      background: #fff0f0;
+      border: 1.5px solid #f5a0a0;
+      border-radius: 8px;
+      padding: 16px 20px;
+      color: #c0392b;
+      font-size: 0.9rem;
+    }
+
+    /* ── 이메일 결과 ── */
+    .result-section { margin-bottom: 20px; }
+    .result-section:last-child { margin-bottom: 0; }
+    .result-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #1F3864;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .result-box {
+      background: #f8fafd;
+      border: 1px solid #dce6f5;
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 0.93rem;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .copy-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 6px;
+    }
+    .copy-btn {
+      background: transparent;
+      border: 1px solid #c8d4e8;
+      border-radius: 6px;
+      padding: 4px 14px;
+      font-size: 0.78rem;
+      color: #4a6080;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .copy-btn:hover { background: #e8edf6; }
+    .copy-btn.copied { color: #27ae60; border-color: #27ae60; }
+
+    /* ── 보고서 결과 ── */
+    .report-block {
+      border-left: 4px solid #1F3864;
+      padding-left: 16px;
+      margin-bottom: 20px;
+    }
+    .report-step-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #1F3864;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .report-content {
+      font-size: 0.92rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #2d3a4a;
+    }
+
+    /* ── 원시 결과 ── */
+    .raw-result {
+      font-size: 0.92rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #2d3a4a;
+    }
+
+    /* ── 다운로드 버튼 ── */
+    .download-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #eef3fb;
+      border: 1.5px solid #c0d0ea;
+      border-radius: 10px;
+      padding: 14px 20px;
+      margin-bottom: 24px;
+    }
+    .download-btn {
+      background: #1F3864;
+      color: #fff;
+      border: none;
+      padding: 9px 24px;
+      border-radius: 7px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.15s;
+    }
+    .download-btn:hover { background: #16294e; }
+    .download-desc { font-size: 0.85rem; color: #4a6080; }
+
+    /* ── 설정 모달 ── */
+    .settings-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: rgba(255,255,255,0.7);
+      font-size: 1.2rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 0.15s;
+    }
+    .settings-btn:hover { color: #fff; }
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 14px;
+      padding: 32px;
+      width: 480px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+    .modal h2 { font-size: 1.1rem; color: #1F3864; margin-bottom: 20px; }
+    .modal label { font-size: 0.82rem; font-weight: 600; color: #1F3864; display: block; margin-bottom: 6px; }
+    .modal input {
+      width: 100%; padding: 10px 12px;
+      border: 1.5px solid #c8d4e8; border-radius: 8px;
+      font-size: 0.9rem; outline: none; margin-bottom: 16px;
+    }
+    .modal input:focus { border-color: #1F3864; }
+    .modal-desc { font-size: 0.8rem; color: #8090a8; margin-top: -10px; margin-bottom: 16px; }
+    .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+    .modal-save {
+      background: #1F3864; color: #fff; border: none;
+      padding: 9px 24px; border-radius: 7px;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    }
+    .modal-cancel {
+      background: #f0f3fa; color: #4a6080; border: none;
+      padding: 9px 20px; border-radius: 7px;
+      font-size: 0.9rem; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+  </svg>
+  <h1>Claude Jobs Dashboard</h1>
+  <span id="server-status">서버 연결 확인 중...</span>
+  <button class="settings-btn" onclick="openSettings()" title="서버 URL 설정">⚙️</button>
+</header>
+
+<!-- 설정 모달 -->
+<div class="modal-overlay" id="settings-modal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <h2>⚙️ 서버 URL 설정</h2>
+    <label>Bridge Server URL</label>
+    <input type="text" id="server-url-input" placeholder="https://cabdriver-body-trustless.ngrok-free.dev" />
+    <p class="modal-desc">ngrok 터널 URL 또는 localhost:3001 입력. 비워두면 자동 감지.</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeSettings()">취소</button>
+      <button class="modal-save" onclick="saveSettings()">저장</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="tabs">
+    <button class="tab-btn active" data-skill="email" onclick="switchTab(this)">📧 이메일 작성</button>
+    <button class="tab-btn" data-skill="report" onclick="switchTab(this)">📋 보고서 작성</button>
+  </div>
+
+  <div class="card">
+    <div class="input-label" id="input-label">이메일 내용을 간단히 입력하세요</div>
+    <textarea id="user-input" placeholder="예) 총무팀장에게 사무용품 구매 승인 요청. 볼펜·노트 등 소모품 10만원어치."></textarea>
+    <div class="btn-row">
+      <button class="run-btn" id="run-btn" onclick="submitJob()">실행</button>
+      <span class="shortcut-hint">Ctrl + Enter</span>
+    </div>
+
+    <hr class="divider">
+
+    <div id="result-area">
+      <div class="placeholder">결과가 여기에 표시됩니다.</div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const NGROK_URL  = "https://cabdriver-body-trustless.ngrok-free.dev";
+  const LOCAL_URL  = "http://localhost:3001";
+
+  // 저장된 URL → 없으면 자동 감지 (로컬이면 localhost, 원격이면 ngrok)
+  function getServer() {
+    const saved = localStorage.getItem("claude_server_url");
+    if (saved) return saved;
+    const h = window.location.hostname;
+    return (h === "localhost" || h === "127.0.0.1" || h === "") ? LOCAL_URL : NGROK_URL;
+  }
+  let SERVER = getServer();
+
+  // ── 설정 모달 ──────────────────────────────────
+  function openSettings() {
+    document.getElementById("server-url-input").value = localStorage.getItem("claude_server_url") || "";
+    document.getElementById("settings-modal").classList.add("open");
+  }
+  function closeSettings() {
+    document.getElementById("settings-modal").classList.remove("open");
+  }
+  function saveSettings() {
+    const val = document.getElementById("server-url-input").value.trim().replace(/\/$/, "");
+    if (val) localStorage.setItem("claude_server_url", val);
+    else      localStorage.removeItem("claude_server_url");
+    SERVER = getServer();
+    closeSettings();
+    checkServer();
+  }
+
+  let currentSkill = "email";
+  let pollTimer = null;
+
+  // ── 탭 전환 ──────────────────────────────────
+  function switchTab(btn) {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentSkill = btn.dataset.skill;
+    document.getElementById("input-label").textContent =
+      currentSkill === "email" ? "이메일 내용을 간단히 입력하세요" : "보고서 주제/배경을 입력하세요";
+    document.getElementById("user-input").placeholder =
+      currentSkill === "email"
+        ? "예) 총무팀장에게 사무용품 구매 승인 요청. 볼펜·노트 등 소모품 10만원어치."
+        : "예) 재무팀 ERP 시스템 교체 필요성 검토 보고서. 현재 시스템 7년 노후화, 연간 유지비 8천만원.";
+    clearResult();
+  }
+
+  // ── 결과 초기화 ──────────────────────────────
+  function clearResult() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    document.getElementById("result-area").innerHTML =
+      '<div class="placeholder">결과가 여기에 표시됩니다.</div>';
+  }
+
+  // ── 작업 제출 ────────────────────────────────
+  async function submitJob() {
+    const input = document.getElementById("user-input").value.trim();
+    if (!input) { alert("내용을 입력해 주세요."); return; }
+
+    const btn = document.getElementById("run-btn");
+    btn.disabled = true;
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+
+    showLoading();
+
+    let jobId;
+    try {
+      const res  = await fetch(`${SERVER}/submit`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ skill: currentSkill, input })
+      });
+      const data = await res.json();
+      if (!data.jobId) throw new Error(data.error || "jobId 없음");
+      jobId = data.jobId;
+    } catch (e) {
+      showError("서버 연결 실패: " + e.message + "\nbridge-server.js가 실행 중인지 확인하세요.");
+      btn.disabled = false;
+      return;
+    }
+
+    // 폴링
+    let elapsed = 0;
+    const MAX   = 180;
+    pollTimer = setInterval(async () => {
+      elapsed++;
+      if (elapsed > MAX) {
+        clearInterval(pollTimer);
+        showError("타임아웃: 3분 안에 결과가 없습니다. watcher.js가 실행 중인지 확인하세요.");
+        btn.disabled = false;
+        return;
+      }
+
+      try {
+        const r    = await fetch(`${SERVER}/result/${jobId}`);
+        const data = await r.json();
+        if (data.status === "done") {
+          clearInterval(pollTimer);
+          showResult(data.result, currentSkill, jobId, data.hasDocx);
+          btn.disabled = false;
+        }
+      } catch {}
+    }, 1000);
+  }
+
+  // ── UI 상태 ──────────────────────────────────
+  function showLoading() {
+    document.getElementById("result-area").innerHTML = `
+      <div class="loading">
+        <div class="spinner"></div>
+        <span>Claude가 작업 중입니다...</span>
+      </div>`;
+  }
+
+  function showError(msg) {
+    document.getElementById("result-area").innerHTML =
+      `<div class="error-box">${escHtml(msg)}</div>`;
+  }
+
+  function showResult(raw, skill, jobId, hasDocx) {
+    if (skill === "email") {
+      renderEmail(raw);
+    } else if (skill === "report") {
+      renderReport(raw, jobId, hasDocx);
+    } else {
+      document.getElementById("result-area").innerHTML =
+        `<div class="raw-result">${escHtml(stripHeader(raw))}</div>`;
+    }
+  }
+
+  // ── 이메일 렌더링 ────────────────────────────
+  function renderEmail(raw) {
+    const body = stripHeader(raw);
+
+    const titleMatch  = body.match(/📧[^\n]*/);
+    const bodyMatch   = body.match(/📝([\s\S]*?)(?=💡|$)/);
+    const tipMatch    = body.match(/💡([\s\S]*?)$/);
+
+    let html = "";
+
+    if (titleMatch) {
+      html += `
+        <div class="result-section">
+          <div class="result-label">📧 추천 메일 제목</div>
+          <div class="result-box">${escHtml(titleMatch[0].replace(/^📧\s*/, "").trim())}</div>
+        </div>`;
+    }
+
+    if (bodyMatch) {
+      const bodyText = bodyMatch[1].trim();
+      html += `
+        <div class="result-section">
+          <div class="result-label">📝 메일 본문</div>
+          <div class="result-box" id="email-body">${escHtml(bodyText)}</div>
+          <div class="copy-row">
+            <button class="copy-btn" onclick="copyText('email-body', this)">복사</button>
+          </div>
+        </div>`;
+    }
+
+    if (tipMatch) {
+      html += `
+        <div class="result-section">
+          <div class="result-label">💡 커뮤니케이션 팁</div>
+          <div class="result-box">${escHtml(tipMatch[1].trim())}</div>
+        </div>`;
+    }
+
+    if (!html) {
+      html = `<div class="raw-result">${escHtml(body)}</div>`;
+    }
+
+    document.getElementById("result-area").innerHTML = html;
+  }
+
+  // ── 보고서 렌더링 ────────────────────────────
+  function renderReport(raw, jobId, hasDocx) {
+    const body  = stripHeader(raw);
+    const steps = body.split(/(?=STEP\s*[1-4])/i);
+    let html    = "";
+
+    // 다운로드 버튼
+    if (hasDocx && jobId) {
+      html += `
+        <div class="download-bar">
+          <a class="download-btn" href="${SERVER}/download/${jobId}" download>
+            📄 Word 파일 다운로드 (.docx)
+          </a>
+          <span class="download-desc">최종 수정본이 Word 파일로 저장되었습니다.</span>
+        </div>`;
+    }
+
+    if (steps.length <= 1) {
+      html += `<div class="raw-result">${escHtml(body)}</div>`;
+    } else {
+      steps.forEach(block => {
+        if (!block.trim()) return;
+        const firstLine = block.split("\n")[0].trim();
+        const rest      = block.split("\n").slice(1).join("\n").trim();
+        html += `
+          <div class="report-block">
+            <div class="report-step-title">${escHtml(firstLine)}</div>
+            <div class="report-content">${escHtml(rest)}</div>
+          </div>`;
+      });
+    }
+
+    document.getElementById("result-area").innerHTML = html;
+  }
+
+  // ── 유틸 ─────────────────────────────────────
+  function stripHeader(raw) {
+    // output 파일의 "jobId: ...\nstatus: done\n---\n" 헤더 제거
+    return raw.replace(/^jobId:.*\nstatus:.*\n---\n/, "").trim();
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  async function copyText(id, btn) {
+    const text = document.getElementById(id).textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = "복사됨 ✓";
+      btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = "복사"; btn.classList.remove("copied"); }, 2000);
+    } catch {
+      alert("복사 실패: 브라우저에서 직접 선택 후 복사해 주세요.");
+    }
+  }
+
+  // Ctrl+Enter 단축키
+  document.addEventListener("keydown", e => {
+    if (e.ctrlKey && e.key === "Enter") submitJob();
+  });
+
+  // ── 서버 상태 확인 ───────────────────────────
+  async function checkServer() {
+    const el = document.getElementById("server-status");
+    try {
+      const r = await fetch(`${SERVER}/health`, { signal: AbortSignal.timeout(2000) });
+      const d = await r.json();
+      if (d.status === "ok") {
+        el.textContent = "🟢 서버 연결됨";
+        return;
+      }
+    } catch {}
+    el.textContent = "🔴 서버 연결 안 됨 (start.bat 실행 필요)";
+  }
+
+  checkServer();
+  setInterval(checkServer, 10000);
+</script>
+</body>
+</html>
