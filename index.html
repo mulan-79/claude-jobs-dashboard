@@ -462,12 +462,21 @@
           clearInterval(pollTimer);
           showResult(data.result, currentSkill, jobId, data.hasDocx);
           btn.disabled = false;
+        } else if (data.queued) {
+          updateLoadingMessage(`이전 작업 처리 중 — 대기 ${data.position}번째 (총 ${data.total}건)`);
+        } else {
+          updateLoadingMessage("Claude가 작업 중입니다...");
         }
       } catch {}
     }, 1000);
   }
 
   // ── UI 상태 ──────────────────────────────────
+  function updateLoadingMessage(msg) {
+    const el = document.querySelector("#result-area .loading span");
+    if (el) el.textContent = msg;
+  }
+
   function showLoading() {
     document.getElementById("result-area").innerHTML = `
       <div class="loading">
