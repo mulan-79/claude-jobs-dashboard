@@ -355,9 +355,14 @@
   const NGROK_URL  = "https://cabdriver-body-trustless.ngrok-free.dev";
   const LOCAL_URL  = "http://localhost:3001";
 
+  // localStorage 안전 접근 (file:// 프로토콜에서 SecurityError 방지)
+  function lsGet(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
+  function lsSet(key, val) { try { localStorage.setItem(key, val); } catch(e) {} }
+  function lsDel(key) { try { localStorage.removeItem(key); } catch(e) {} }
+
   // 저장된 URL → 없으면 자동 감지 (로컬이면 localhost, 원격이면 ngrok)
   function getServer() {
-    const saved = localStorage.getItem("claude_server_url");
+    const saved = lsGet("claude_server_url");
     if (saved) return saved;
     const h = window.location.hostname;
     return (h === "localhost" || h === "127.0.0.1" || h === "") ? LOCAL_URL : NGROK_URL;
@@ -372,7 +377,7 @@
 
   // ── 설정 모달 ──────────────────────────────────
   function openSettings() {
-    document.getElementById("server-url-input").value = localStorage.getItem("claude_server_url") || "";
+    document.getElementById("server-url-input").value = lsGet("claude_server_url") || "";
     document.getElementById("settings-modal").classList.add("open");
   }
   function closeSettings() {
@@ -380,8 +385,8 @@
   }
   function saveSettings() {
     const val = document.getElementById("server-url-input").value.trim().replace(/\/$/, "");
-    if (val) localStorage.setItem("claude_server_url", val);
-    else      localStorage.removeItem("claude_server_url");
+    if (val) lsSet("claude_server_url", val);
+    else      lsDel("claude_server_url");
     SERVER = getServer();
     closeSettings();
     checkServer();
