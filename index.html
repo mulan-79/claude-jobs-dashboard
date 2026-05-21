@@ -364,6 +364,12 @@
   }
   let SERVER = getServer();
 
+  // ngrok 인터스티셜 우회 헤더 — 모든 fetch에 적용
+  const FETCH_HEADERS = {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "1"
+  };
+
   // ── 설정 모달 ──────────────────────────────────
   function openSettings() {
     document.getElementById("server-url-input").value = localStorage.getItem("claude_server_url") || "";
@@ -420,7 +426,7 @@
     try {
       const res  = await fetch(`${SERVER}/submit`, {
         method:  "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: FETCH_HEADERS,
         body:    JSON.stringify({ skill: currentSkill, input })
       });
       const data = await res.json();
@@ -445,7 +451,7 @@
       }
 
       try {
-        const r    = await fetch(`${SERVER}/result/${jobId}`);
+        const r    = await fetch(`${SERVER}/result/${jobId}`, { headers: FETCH_HEADERS });
         const data = await r.json();
         if (data.status === "done") {
           clearInterval(pollTimer);
@@ -592,7 +598,7 @@
   async function checkServer() {
     const el = document.getElementById("server-status");
     try {
-      const r = await fetch(`${SERVER}/health`, { signal: AbortSignal.timeout(2000) });
+      const r = await fetch(`${SERVER}/health`, { headers: FETCH_HEADERS, signal: AbortSignal.timeout(2000) });
       const d = await r.json();
       if (d.status === "ok") {
         el.textContent = "🟢 서버 연결됨";
