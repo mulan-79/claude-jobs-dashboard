@@ -476,6 +476,24 @@
       `<div class="error-box">${escHtml(msg)}</div>`;
   }
 
+  async function downloadDocx(jobId) {
+    try {
+      const r = await fetch(`${SERVER}/download/${jobId}`, { headers: FETCH_HEADERS });
+      if (!r.ok) throw new Error("파일을 찾을 수 없습니다");
+      const blob = await r.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `${jobId}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("다운로드 오류: " + e.message);
+    }
+  }
+
   function showResult(raw, skill, jobId, hasDocx) {
     if (skill === "email") {
       renderEmail(raw);
@@ -542,9 +560,9 @@
     if (hasDocx && jobId) {
       html += `
         <div class="download-bar">
-          <a class="download-btn" href="${SERVER}/download/${jobId}" download>
+          <button class="download-btn" onclick="downloadDocx('${jobId}')">
             📄 Word 파일 다운로드 (.docx)
-          </a>
+          </button>
           <span class="download-desc">최종 수정본이 Word 파일로 저장되었습니다.</span>
         </div>`;
     }
